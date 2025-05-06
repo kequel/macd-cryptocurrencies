@@ -1,0 +1,305 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[polish]{babel}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{hyperref}
+
+\title{Analiza wskaźnika MACD}
+\author{Karolina Glaza \\ \href{https://github.com/kequel}{github.com/kequel}}
+\date{Marzec 2025}
+
+\begin{document}
+
+\maketitle
+
+\section{Wstęp}
+Wskaźnik MACD, czyli wskaźnik zbieżności/rozbieżności średnich kroczących (ang. moving average 
+convergence/divergence), jest jednym z najpopularniejszych narzędzi w analizie technicznej 
+instrumentów finansowych. Umożliwia identyfikację sygnałów kupna i sprzedaży, które mogą wspomóc 
+ocenę sytuacji rynkowej, lecz należy traktować je jako pomocniczy element analizy technicznej, a nie 
+jedyny fundament decyzji inwestycyjnych. 
+\\ \\ Składa się z dwóch elementów: 
+\begin{itemize}
+    \item Linii MACD – różnicy między 12-okresową a 26-okresową wykładniczą średnią kroczącą (EMA),
+    \item Linii sygnałowej (SIGNAL) – 9-okresowej EMA obliczonej z wartości MACD.
+\end{itemize}
+Sygnały transakcyjne generowane są w momencie przecięcia się tych linii. \\ \\
+{\centering W projekcie weryfikowano skuteczność MACD dla kryptowaluty Dogecoin w okresie 03/20/2021 - 
+03/20/2025.}
+
+\section{Implementacja}
+\subsection{Dane i narzędzia}
+\subsubsection{Dane:} historyczne ceny zamknięcia Dogecoin (5 lat) z pliku CSV.
+
+\subsubsection{Narzędzia:}
+\begin{itemize}
+    \item \texttt{pandas} – wczytywanie danych,
+    \item \texttt{numpy} – obliczenia EMA,
+    \item \texttt{matplotlib} – wizualizacja. \\
+\end{itemize}
+
+\subsection{Algorytm}
+Do wyznaczenia wskaźnika MACD wykorzystano kroki oparte na obliczaniu wykładniczych średnich kroczących (EMA), które nadają większą wagę nowszym obserwacjom.
+
+\begin{enumerate}
+    \item \textbf{Obliczenie EMA:} \\
+    \[
+    EMA_t = \alpha \cdot x_t + (1 - \alpha) \cdot EMA_{t-1},
+    \]
+    gdzie $x_t$ to cena zamknięcia w dniu $t$, a $\alpha$ to współczynnik wygładzania, obliczany jako:
+    \[
+    \alpha = \frac{2}{N + 1},
+    \]
+    przy czym $N$ oznacza liczbę okresów.
+    \item \textbf{Wyznaczenie MACD:} \\
+    Różnica między 12-okresową EMA a 26-okresową EMA:
+    \[
+    MACD_t = EMA_{12,t} - EMA_{26,t}.
+    \]
+    \item \textbf{Wyznaczenie linii sygnałowej (SIGNAL):} \\
+    9-okresowa EMA wyliczona na podstawie wartości MACD:
+    \[
+    SIGNAL_t = EMA_{9}(MACD).
+    \]
+    \item \textbf{Generowanie sygnałów transakcyjnych}
+    na podstawie przecięć linii MACD i SIGNAL
+    \begin{itemize}
+        \item Sygnał \textbf{kupna} – gdy MACD przecina SIGNAL od dołu,
+        \item Sygnał \textbf{sprzedaży} – gdy MACD przecina SIGNAL od góry.
+    \end{itemize}
+   Sygnały generowane przez porównanie MACD i SIGNAL dzień po dniu.
+\end{enumerate}
+
+\section{Wyniki i analiza}
+\subsection{Wykresy [20.03.2021 – 20.03.2025]}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{sygnaly_dogecoin.png}
+  \par\vspace{0.5em}
+  \parbox{0.9\textwidth}{\centering\small Wskaźnik generował liczne sygnały, często w momentach wysokiej zmienności, co prowadziło do strat} \\
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{ms_dogecoin.png}
+  \par\vspace{0.5em}
+  \parbox{0.9\textwidth}{\centering\small Linie MACD i SIGNAL często przecinały się, generując 62 sygnały kupna i 62 sprzedaży. }
+\end{figure}
+
+\subsection{Wykresy [10.12.2024 – 20.03.2025]}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{sygnaly_dogecoin_100dni.png}
+  \par\vspace{0.5em}
+  \parbox{0.9\textwidth}{\centering\small Wykres przedstawia zmienność cen Dogecoin w okresie 100 dni, ukazując liczne wahania oraz momenty generacji sygnałów kupna i sprzedaży. }
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{ms_dogecoin_100dni.png}
+  \par\vspace{0.5em}
+  \parbox{0.9\textwidth}{\centering\small Przecięcia ilustrują dynamiczną reakcję wskaźnika na krótkoterminowe zmiany cen.}
+\end{figure}
+
+
+\subsection{Analiza transakcji (ostatnie 100 dni)}
+
+\begin{table}[H]
+\centering
+\begin{minipage}{0.48\textwidth}
+\centering
+\caption{Sygnały kupna}
+\begin{tabular}{|c|c|}
+\hline
+\textbf{Data} & \textbf{Cena (USD)} \\
+\hline
+2025-03-08 & 0.1923 \\
+2025-02-01 & 0.3080 \\
+2025-01-03 & 0.3797 \\
+2024-12-18 & 0.3586 \\
+\hline
+\end{tabular}
+\end{minipage}
+\hfill
+\begin{minipage}{0.48\textwidth}
+\centering
+\caption{Sygnały sprzedaży}
+\begin{tabular}{|c|c|}
+\hline
+\textbf{Data} & \textbf{Cena (USD)} \\
+\hline
+2025-03-13 & 0.1652 \\
+2025-02-11 & 0.2531 \\
+2025-01-14 & 0.3558 \\
+2025-01-02 & 0.3388 \\
+\hline
+\end{tabular}
+\end{minipage}
+\end{table}
+
+\paragraph{Transakcja 1:\\}  
+Kupno 2024-12-18 (0.3586 USD), Sprzedaż 2025-01-02 (0.3388 USD)\\  
+\textbf{STRATA} w wysokości $0.3388 - 0.3586 = -0.0198$ USD \\  
+Pomimo pozytywnego sygnału MACD, cena po krótkim wzroście spadła. Wskazuje to na opóźnioną reakcję MACD.
+
+\paragraph{Transakcja 2:\\}  
+Kupno 2025-01-03 (0.3797 USD), Sprzedaż 2025-01-14 (0.3558 USD)\\  
+\textbf{STRATA} w wysokości $0.3558 - 0.3797 = -0.0239$ USD \\  
+MACD wygenerował sygnał kupna po wcześniejszym sygnale sprzedaży. Cena wzrosła tylko chwilowo, po czym nastąpił spadek. Nietrafiony moment wejścia na rynek.
+
+\paragraph{Transakcja 3:\\}  
+Kupno 2025-02-01 (0.3080 USD), Sprzedaż 2025-02-11 (0.2531 USD)\\  
+\textbf{STRATA} w wysokości $0.2531 - 0.3080 = -0.0549$ USD \\  
+Wskaźnik MACD zasugerował kupno, ale spadek cen Dogecoina rozpoczął się niedługo później. Sygnał błędny.
+
+\paragraph{Transakcja 4:\\}  
+Kupno 2025-03-08 (0.1923 USD), Sprzedaż 2025-03-13 (0.1652 USD)\\  
+\textbf{STRATA} w wysokości $0.1652 - 0.1923 = -0.0271$ USD \\  
+Cena nie utrzymała się, Wskaźnik nie przewidział krótkoterminowej korekty.
+
+\paragraph{Wnioski:}
+Wszystkie cztery transakcje zakończyły się stratami, mimo że decyzje były podejmowane zgodnie z klasycznymi sygnałami MACD. Wskaźnik ten generował sygnały zbyt późno lub w momentach dużej zmienności, co czyni go \textbf{nieskutecznym narzędziem w analizie krótkoterminowej dla Dogecoin}. \\
+
+\section{Symulacja inwestycyjna}
+\subsection{Założenia}
+\begin{itemize}
+    \item Kapitał początkowy: 1000 USD,
+    \item Strategia:  Kupno/sprzedaż całego portfela na każdy sygnał.
+\end{itemize}
+
+\subsection{Wykres wartości portfela}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{portfel_dogecoin.png}
+  \par\vspace{0.5em}
+  \parbox{0.9\textwidth}{\centering\small Strategia oparta wyłącznie na MACD doprowadziła do straty 84.6\% kapitału, głównie z powodu częstych fałszywych sygnałów w warunkach wysokiej zmienności Dogecoin.}
+\end{figure}
+
+\subsection{Wyniki}
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{6cm}|p{6cm}|}
+\hline
+\textbf{Wskaźnik} & \textbf{Wartość} \\
+\hline
+Końcowy kapitał & 155{,}39 USD \\
+\hline
+Liczba transakcji & 62 (17 zyskownych, 45 stratnych) \\
+\hline
+Średni zysk na transakcję & +3{,}48\% \\
+\hline
+Maksymalny zysk & +222{,}44\% \\
+\hline
+Maksymalna strata & –33{,}25\% \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Wnioski dla Dogecoin}
+\subsection{Ograniczenia MACD}
+\begin{itemize}
+    \item Opóźnienie sygnałów - MACD reaguje z opóźnieniem na nagłe zmiany cen, szczególnie na rynkach o wysokiej zmienności (jak kryptowaluty).
+    \item Fałszywe sygnały - 73\% transakcji zakończyło się stratą z powodu częstych przecięć linii MACD i SIGNAL w krótkich okresach.
+\end{itemize}
+
+\subsection{Mocne strony}
+\begin{itemize}
+    \item Prostota - Łatwa implementacja i interpretacja.
+    \item Skuteczność w trendach - W pojedynczych przypadkach (np. maksymalny zysk +222\%) MACD poprawnie identyfikował długoterminowe trendy.
+\end{itemize}
+
+\subsection{Możliwe udoskonalenia (dodanie filtrów):}
+\begin{itemize}
+    \item Ignorowanie małych zmian (ignoruj sygnały, jeśli zmiana ceny <X\%),
+    \item Dodanie innych wskaźników i wymaganie potwierdzenie przez nie,
+    \item Strategia „kup i trzymaj”:\\ Dla Dogecoin w badanym okresie pasywna inwestycja byłaby bardziej opłacalna. \\\\
+\end{itemize}
+
+\section{Porównanie z innymi danymi: Historyczne ceny zamknięcia Bitcoin}
+Bitcoin został włączony do analizy,
+aby porównać skuteczność wskaźnika MACD na rynku o innej charakterystyce. Jego niższa zmienność i
+wyższa kapitalizacja umożliwiają ocenę metod w szerszym kontekście.
+
+\subsection{Wykresy [20.03.2021 – 20.03.2025]}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{sygnaly_bitcoin.png}
+  \par\vspace{0.5em}
+  \parbox{0.9\textwidth}{\centering\small W porównaniu do Dogecoin, ceny Bitcoin wykazują mniejszą zmienność, co przekłada się na rzadsze, lecz bardziej stabilne sygnały. }
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{ms_bitcoin.png}
+  \par\vspace{0.5em}
+  \parbox{0.9\textwidth}{\centering\small Linie MACD i SIGNAL przecinały się, generując 54 sygnały kupna i 55 sprzedaży }
+\end{figure}
+
+\subsection{Wykresy [10.12.2024 – 20.03.2025]}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{sygnaly_bitcoin_100dni.png}
+  \par\vspace{0.5em}
+  \parbox{0.9\textwidth}{\centering\small Pomimo mniejszej zmienności niż Dogecoin, pojawiają się momenty generowania sygnałów, które mogą sugerować zarówno początki trendów, jak i często fałszywe alarmy. }
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{ms_bitcoin_100dni.png}
+  \par\vspace{0.5em}
+  \parbox{0.9\textwidth}{\centering\small Mniejsza zmienność nie eliminuje ryzyka fałszywych sygnałów. }
+\end{figure}
+
+\subsection{Symulacja inwestycyjna dla innych danych}
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{6cm}|p{6cm}|}
+\hline
+\textbf{Wskaźnik} & \textbf{Wartość} \\
+\hline
+Końcowy kapitał & 754{,}02 USD \\
+\hline
+Liczba transakcji & 54 (18 zysków, 36 strat) \\
+\hline
+Średni zysk na transakcję & +0{,}94\% \\
+\hline
+Maksymalny zysk & +43{,}52\% \\
+\hline
+Maksymalna strata & –14{,}83\% \\
+\hline
+\end{tabular}
+\end{table}
+
+
+\subsection{Wykres wartości portfela}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{portfel_bitcoin.png}
+  \par\vspace{0.5em}
+  \parbox{0.9\textwidth}{\centering\small W przypadku Bitcoin, przy mniejszej liczby transakcji, portfel wykazuje mniejszy spadek kapitału niż w analizie Dogecoin, co wynika z mniejszej zmienności rynku, choć ogólne rezultaty nadal są niezadowalające.}
+\end{figure}
+\paragraph{}
+
+\section{Wyniki Dogecoin vs Bitcoin}
+Analiza wykazuje, że wskaźnik MACD, mimo że generuje mniej sygnałów na rynku Bitcoin niż na
+Dogecoin, również nie gwarantuje sukcesu inwestycyjnego. Mniejsze ryzyko fałszywych sygnałów nie
+przekłada się na jednoznaczną przewagę, co sugeruje konieczność łączenia MACD z dodatkowymi
+narzędziami analizy technicznej w celu poprawy skuteczności strategii.
+
+\section{Podsumowanie}
+Wskaźnik MACD okazał się nieskutecznym narzędziem, gdy stosowany był samodzielnie, zarówno dla
+bardzo zmiennych kryptowalut, takich jak Dogecoin, jak i dla bardziej stabilnych, jak Bitcoin. \\\\
+W przypadku Dogecoin wysoka zmienność skutkowała wieloma fałszywymi sygnałami, podczas gdy dla
+Bitcoin sygnały były rzadsze, ale nadal nie przynosiły oczekiwanej przewagi inwestycyjnej.  \\\\
+Analizy wskazują, że MACD pomocny może być jedynie wtedy, gdy jest on wykorzystywany w połączeniu z
+innymi narzędziami analizy technicznej oraz odpowiednio dostosowanymi filtrami, co pozwala na lepsze
+odzwierciedlenie specyfiki poszczególnych rynków.
+
+\end{document}
